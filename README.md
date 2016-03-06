@@ -65,7 +65,7 @@ class Engine::Start
     execution.success!
   end
 
-  def consumes_fuel(execution)
+  def consumes_fuel
     context.fuel -= 1
   end
 end
