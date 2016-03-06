@@ -2,12 +2,12 @@
 
 # ExMachina
 
-A simple implementation of [Finine-state](https://en.wikipedia.org/wiki/Finite-state_machine) using OOP following the principles:
+A simple implementation of [Finine-state machine](https://en.wikipedia.org/wiki/Finite-state_machine) using OOP following the principles:
 
 - Machine: a set of status, events and transitions
 - Status: the state of a machine
-- Events: a action performed on each status
-- Transitions: the graph of events and status
+- Event: a action performed on each status
+- Transition: the graph of status for a given event
 
 The *machine* is declared on target class that knowns the possible *status* and *events*. Each event should be implemented on its own class, where the *transitions* are declared too. ExMachina manages the flow, execution and transitions of each event and status.
 
@@ -41,10 +41,8 @@ class Engine
   has_events Engine::Start, Engine::Stop
 
   attr_accessor :status, :fuel
-
-  def initialize(attributes = {})
-    @status = attributes.fetch(:status, "stopped")
-    @fuel   = attributes.fetch(:fuel, 10)
+  def initialize(status = "stopped", fuel = 10)
+    @status, @fuel = satus, fuel
   end
 end
 ```
@@ -81,7 +79,7 @@ end
 
 Here is an usage example:
 
-```irb
+```ruby
 engine = Engine.new     # => #<Engine:0x007fb77c065758>
 engine.status           # "stopped" 
 engine.fuel             # 10

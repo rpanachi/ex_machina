@@ -2,9 +2,8 @@ class Engine
   include ExMachina::Machine
 
   attr_accessor :status, :fuel
-  def initialize(attributes = {})
-    @status = attributes.fetch(:status, "stopped")
-    @fuel   = attributes.fetch(:fuel, 10)
+  def initialize(status = "stopped", fuel = 10)
+    @status, @fuel = status, fuel
   end
 end
 

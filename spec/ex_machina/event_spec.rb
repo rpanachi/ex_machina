@@ -40,7 +40,7 @@ describe ExMachina::Event do
 
   context "instance methods" do
     describe "#fire" do
-      let(:engine) { Engine.new(status: "stopped") }
+      let(:engine) { Engine.new("stopped") }
       subject { Engine::Start.new(engine) }
 
       it "is successful" do
