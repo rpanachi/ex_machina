@@ -1,7 +1,7 @@
 module ExMachina
-  module Eventable
+  module Machine
     def self.included(base)
-      base.extend ClassMethods
+      base.extend  ClassMethods
       base.include InstanceMethods
     end
 

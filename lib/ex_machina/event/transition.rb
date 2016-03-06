@@ -5,8 +5,6 @@ module ExMachina
       attr_reader :from, :to
       attr_reader :do_if, :do_unless, :do_before, :do_after, :do_success, :do_failure
 
-      attr_accessor :previous, :current, :context, :result
-
       def initialize(options)
         @from    = Array(options.fetch(:from)).map { |status| normalize(status) }
         @to      = normalize(options.fetch(:to))

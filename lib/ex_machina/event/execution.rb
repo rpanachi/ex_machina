@@ -1,6 +1,6 @@
 module ExMachina
   module Event
-    class Runner
+    class Execution
 
       STATUSES = [
         SUCCESS = :success,
@@ -86,8 +86,11 @@ module ExMachina
 
       def eligible?
         if transition.conditional?
-          invoke(event, transition.do_if, self) ||
-            invoke(event, transition.do_unless, self)
+          if transition.do_if
+            invoke(transition.do_if)
+          elsif transition.do_unless
+            !invoke(transition.do_unless)
+          end
         else
           true
         end
@@ -98,41 +101,29 @@ module ExMachina
 
         return skipped! unless eligible?
 
-        invoke(event, transition.do_before, self)
+        invoke(transition.do_before)
         begin
-          call = invoke(event, :call, self)
-          invoke(event, transition.do_after, self)
+          call = invoke(:perform)
+          invoke(transition.do_after)
           finish!(call)
         rescue StandardError => ex
           error!(ex)
         end
 
         if success?
-          invoke(event, :change_status, self)
-          invoke(event, transition.do_success, self)
+          invoke(:transit)
+          invoke(transition.do_success)
         elsif failure?
-          invoke(event, transition.do_failure, self)
+          invoke(transition.do_failure)
         end
 
         call
       end
 
-      def invoke(context, meth, *args)
-        return if meth.nil?
+      protected
 
-        if meth.respond_to?(:call)
-          all_args    = Array([context, *args])
-          meth_params = meth.parameters
-          meth_args   = *all_args.first(meth_params.size)
-
-          meth.call(*meth_args)
-
-        elsif context.respond_to?(meth)
-          meth_params = context.method(meth).parameters
-          meth_args   = *args.first(meth_params.size)
-
-          context.send(meth, *meth_args)
-        end
+      def invoke(meth, arg = self)
+        Util.invoke_method(event, meth, arg)
       end
     end
   end

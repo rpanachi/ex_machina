@@ -1,13 +1,15 @@
 require "ex_machina/event/transition"
-require "ex_machina/event/runner"
+require "ex_machina/event/execution"
 require "ex_machina/event/validations"
+require "ex_machina/adapter"
 
 module ExMachina
   module Event
     def self.included(base)
-      base.extend(ClassMethods)
-      base.include(InstanceMethods)
-      base.include(Validations)
+      base.extend  ClassMethods
+      base.include InstanceMethods
+      base.include Validations
+      base.include Adapter
     end
 
     module ClassMethods
@@ -27,7 +29,7 @@ module ExMachina
         self.new(context).can_fire?
       end
       def event
-        self.name.demodulize.underscore
+        @event ||= Util::String.new(self.name).demodulize.underscore
       end
     end
 
@@ -38,31 +40,40 @@ module ExMachina
         @context = context
       end
 
+      # Available transitions
       def transitions
         self.class
           .transitions
           .select { |transition| transition.from?(status) }
       end
 
+      # The context current status
       def status
         context.status
       end
 
-      def change_status(execution)
+      # Called on event success
+      def transit(execution)
         context.status = execution.current.to_s
-        context.save
+        persist(context)
+      end
+
+      # Override this method on event implementation
+      def perform
+        true
       end
 
       def fire
         validate
-        return unless can_fire?
+        return false unless can_fire?
 
         result = false
         within_transaction do
           transitions.each do |transition|
-            runner = Runner.new(self, transition)
-            result = runner.run
+            runner = Execution.new(self, transition)
+            runner.run
 
+            result = runner.success?
             break result unless runner.skipped?
           end
         end
@@ -79,14 +90,6 @@ module ExMachina
         valid?
       end
 
-      def call
-        raise NotImplementedError, "method 'call' must be implemented on event class"
-      end
-
-      def within_transaction(&block)
-        # TODO implement strategy for transaction
-        DB.transaction(&block)
-      end
     end
   end
 end
