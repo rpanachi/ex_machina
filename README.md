@@ -1,13 +1,15 @@
+[![wercker status](https://app.wercker.com/status/32429e43b793f95c450ddd2a89efdb21/s/master "wercker status")](https://app.wercker.com/project/bykey/32429e43b793f95c450ddd2a89efdb21)
+
 # ExMachina
 
-A simple implementation of (Finine-state)[https://en.wikipedia.org/wiki/Finite-state_machine] using OOP following the principles:
+A simple implementation of [Finine-state](https://en.wikipedia.org/wiki/Finite-state_machine) using OOP following the principles:
 
 - Machine: a set of status, events and transitions
 - Status: the state of a machine
 - Events: a action performed on each status
 - Transitions: the graph of events and status
 
-The *machine* is declared on target class that knowns the possible status and events. Each event should be implemented on its own class, where the transitions are declared too. ExMachina manages the flow, execution and transitions of each event and status.
+The *machine* is declared on target class that knowns the possible *status* and *events*. Each event should be implemented on its own class, where the *transitions* are declared too. ExMachina manages the flow, execution and transitions of each event and status.
 
 ## Installation
 
@@ -31,7 +33,7 @@ Include the `ExMachina::Machine` on target object and define the status and even
 
 Here a classic example of a state machine of an Engine, which have too events: start and stop:
 
-```
+```ruby
 class Engine
   include ExMachina::Machine
 
@@ -49,7 +51,7 @@ end
 
 And implement each event on its own class. Here was made on subclasses:
 
-```
+```ruby
 class Engine::Start
   include ExMachina::Event
 
@@ -60,19 +62,13 @@ class Engine::Start
   end
 
   def perform(execution)
-    engage_transmission
+    # do something here
 
     execution.success!
   end
 
   def consumes_fuel(execution)
     context.fuel -= 1
-  end
-
-  protected
-
-  def engage_transmission
-    # do something
   end
 end
 
@@ -85,7 +81,7 @@ end
 
 Here is an usage example:
 
-```
+```irb
 engine = Engine.new     # => #<Engine:0x007fb77c065758>
 engine.status           # "stopped" 
 engine.fuel             # 10
