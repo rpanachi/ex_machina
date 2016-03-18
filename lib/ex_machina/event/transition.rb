@@ -3,9 +3,9 @@ module ExMachina
     class Transition
 
       attr_reader :from, :to
-      attr_reader :do_if, :do_unless, :do_before, :do_after, :do_success, :do_failure
+      attr_reader :do_if, :do_unless, :do_before, :do_after, :do_success, :do_failure, :do_error
 
-      def initialize(options)
+      def initialize(**options)
         @from    = Array(options.fetch(:from)).map { |status| normalize(status) }
         @to      = normalize(options.fetch(:to))
 
@@ -16,6 +16,7 @@ module ExMachina
         @do_after   = options[:after]
         @do_success = options[:success]
         @do_failure = options[:failure]
+        @do_error   = options[:error]
       end
 
       def from?(status)

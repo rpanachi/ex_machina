@@ -28,7 +28,7 @@ module ExMachina
         @running  = true
         @result   = nil
         @previous = event.status
-        @current  = nil
+        @current  = event.status
       end
 
       def finish!(value)
@@ -44,7 +44,7 @@ module ExMachina
         elsif value == :skipped
           skipped!
         elsif value == :error
-          error!
+          error!(@exception)
         else
           @result = value
         end
@@ -65,7 +65,7 @@ module ExMachina
         result == :failure
       end
       def failure!
-        @current = @previous
+        @current = previous
         finish!(@result = :failure)
       end
 
@@ -77,7 +77,7 @@ module ExMachina
       end
 
       def error!(exception)
-        # TODO handle exception
+        @exception = exception
         finish!(@result = :error)
       end
       def error?
@@ -101,10 +101,11 @@ module ExMachina
 
         return skipped! unless eligible?
 
-        invoke(transition.do_before)
         begin
-          call = invoke(:perform)
-          invoke(transition.do_after)
+          before = invoke(callback(:before), true)
+          call   = invoke(:perform, true)   if before
+          after  = invoke(callback(:after)) if call
+
           finish!(call)
         rescue StandardError => ex
           error!(ex)
@@ -112,9 +113,15 @@ module ExMachina
 
         if success?
           invoke(:transit)
-          invoke(transition.do_success)
+          invoke(callback(:success))
         elsif failure?
-          invoke(transition.do_failure)
+          invoke(callback(:failure))
+        elsif error?
+          invoke(callback(:error))
+        elsif skipped?
+          invoke(callback(:skip))
+        else
+          # do what?
         end
 
         call
@@ -122,8 +129,15 @@ module ExMachina
 
       protected
 
-      def invoke(meth, arg = self)
-        Util.invoke_method(event, meth, arg)
+      # return the transition 'do_callback' or default '(before|after)_transition method
+      def callback(name)
+        transition.send("do_#{name}") || "#{name}_#{previous}_to_#{transition.to}"
+      end
+
+      def invoke(meth, default = nil)
+        result = Util.invoke_method(event, meth, self)
+        return default if result.nil?
+        result
       end
     end
   end

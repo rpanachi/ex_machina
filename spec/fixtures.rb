@@ -10,15 +10,15 @@ end
 class Engine::Start
   include ExMachina::Event
 
-  transition from: :stopped, to: :running, if: :has_fuel?, after: :consumes_fuel
+  transition from: :stopped, to: :running,
+    if:    :has_fuel?,
+    after: :consumes_fuel
 
   def has_fuel?
     context.fuel > 0
   end
 
   def perform(execution)
-    # do something
-
     execution.success!
   end
 

@@ -44,7 +44,7 @@ describe ExMachina::Event do
       subject { Engine::Start.new(engine) }
 
       it "is successful" do
-        expect(subject.fire).to eq(true)
+        expect(subject.fire).to eq(:running)
       end
       it "validate transition" do
         engine.status = "unknown"
@@ -60,12 +60,12 @@ describe ExMachina::Event do
       it "trust on 'perform' result" do
         expect(subject).to receive(:perform).and_return(false)
 
-        expect(subject.fire).to eq(false)
+        expect(subject.fire).to eq("stopped")
       end
       it "is skipped if transition is conditional" do
         expect(subject).to receive(:has_fuel?).and_return(false)
 
-        expect(subject.fire).to eq(false)
+        expect(subject.fire).to eq("stopped")
       end
     end
 

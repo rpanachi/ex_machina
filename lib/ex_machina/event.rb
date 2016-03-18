@@ -73,8 +73,8 @@ module ExMachina
             runner = Execution.new(self, transition)
             runner.run
 
-            result = runner.success?
-            break result unless runner.skipped?
+            result = runner.current
+            break if runner.success?
           end
         end
         result
