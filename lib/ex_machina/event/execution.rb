@@ -98,21 +98,23 @@ module ExMachina
 
       def run
         start!
-
         return skipped! unless eligible?
 
         begin
-          before = invoke(callback(:before), true)
-          call   = invoke(:perform, true)   if before
-          after  = invoke(callback(:after)) if call
+          invoke(callback(:before), true)
+          if (performed = invoke(:perform, true))
+            success!
+          else
+            failure!
+          end
+          invoke(:transit)
+          invoke(callback(:after))
 
-          finish!(call)
         rescue StandardError => ex
           error!(ex)
         end
 
         if success?
-          invoke(:transit)
           invoke(callback(:success))
         elsif failure?
           invoke(callback(:failure))
@@ -124,14 +126,14 @@ module ExMachina
           # do what?
         end
 
-        call
+        performed
       end
 
       protected
 
       # return the transition 'do_callback' or default '(before|after)_transition method
       def callback(name)
-        transition.send("do_#{name}") || "#{name}_#{previous}_to_#{transition.to}"
+        transition.send("do_#{name}") || "#{name}_#{previous}_to_#{current}"
       end
 
       def invoke(meth, default = nil)
