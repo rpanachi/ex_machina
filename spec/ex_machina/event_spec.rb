@@ -16,21 +16,28 @@ describe ExMachina::Event do
     subject { Engine::Start }
 
     describe ".fire" do
-      it "call fire on event instance" do
-        expect_any_instance_of(subject).to receive(:fire)
-
-        subject.fire(engine)
+      it "true on success" do
+        result = subject.fire(engine)
+        expect(result).to be_truthy
+      end
+      it "false on failure or error" do
+        engine.status = "xxx"
+        result = subject.fire(engine)
+        expect(result).to be_falsy
       end
     end
     describe ".fire!" do
-      it "call fire! on event instance" do
-        expect_any_instance_of(subject).to receive(:fire!)
-
-        subject.fire!(engine)
+      it "true on success" do
+        result = subject.fire!(engine)
+        expect(result).to be_truthy
+      end
+      it "raise error on failure or error" do
+        engine.status = "xxx"
+        expect { subject.fire!(engine) }.to raise_error(ExMachina::InvalidTransition)
       end
     end
     describe ".can_fire?" do
-      it "call can_fire! on event instance" do
+      it "validates" do
         expect_any_instance_of(subject).to receive(:can_fire?)
 
         subject.can_fire?(engine)
@@ -39,42 +46,68 @@ describe ExMachina::Event do
   end
 
   context "instance methods" do
-    describe "#fire" do
-      let(:engine) { Engine.new("stopped") }
-      subject { Engine::Start.new(engine) }
+    let(:engine) { Engine.new("stopped") }
+    subject { Engine::Start.new(engine) }
 
+    describe "#fire" do
       it "is successful" do
-        expect(subject.fire).to eq(:running)
+        result = subject.fire
+
+        expect(result).to be_success
+        expect(result.current).to eq(:running)
+        expect(engine.status).to eq("running")
       end
+
       it "validate transition" do
         engine.status = "unknown"
 
         result = subject.fire
-        expect(subject.errors).to_not be_empty
+        expect(result).to be_invalid
+        expect(result.error).to_not be_nil
       end
-      it "change context status" do
-        result = subject.fire
 
-        expect(engine.status).to eq("running")
-      end
       it "trust on 'perform' result" do
         expect(subject).to receive(:perform).and_return(false)
 
-        expect(subject.fire).to eq("stopped")
+        result = subject.fire
+
+        expect(result).to be_failure
+        expect(result.current).to eq("stopped")
       end
+
       it "is skipped if transition is conditional" do
         expect(subject).to receive(:has_fuel?).and_return(false)
 
-        expect(subject.fire).to eq("stopped")
+        result = subject.fire
+
+        expect(result).to be_skipped
+        expect(result.current).to eq("stopped")
+      end
+
+      it "handle errors on result" do
+        expect(subject).to receive(:consumes_fuel)
+          .and_raise("Unexpected error")
+
+        result = subject.fire
+
+        expect(result).to_not be_success
+        expect(result).to be_error
+        expect(result.error).to_not be_nil
+
+        expect(engine.status).to eq("running")
       end
     end
 
-    describe ".fire!" do
-
-    end
-
     describe ".can_fire?" do
+      it "valid" do
+        expect(subject).to be_can_fire
+      end
 
+      it "invalid" do
+        engine.status = "unknown"
+
+        expect(subject).to_not be_can_fire
+      end
     end
   end
 end

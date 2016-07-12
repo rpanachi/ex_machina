@@ -1,6 +1,7 @@
 require "ex_machina/event/transition"
-require "ex_machina/event/execution"
 require "ex_machina/event/validations"
+require "ex_machina/event/execution"
+require "ex_machina/errors"
 require "ex_machina/adapter"
 
 module ExMachina
@@ -20,10 +21,15 @@ module ExMachina
         transitions << Transition.new(*args)
       end
       def fire(context)
-        self.new(context).fire
+        execution = self.new(context).fire
+        execution.success?
       end
       def fire!(context)
-        self.new(context).fire!
+        execution = self.new(context).fire
+
+        execution.success? || (
+          raise execution.error || ExMachina::TransitionError.new("Unable to perform #{self.class.event}")
+        )
       end
       def can_fire?(context)
         self.new(context).can_fire?
@@ -65,31 +71,31 @@ module ExMachina
 
       def fire
         validate
-        return false unless can_fire?
+        execution = nil
 
-        result = false
-        within_transaction do
-          transitions.each do |transition|
-            runner = Execution.new(self, transition)
-            runner.run
+        if valid?
+          within_transaction do
+            transitions.each do |transition|
+              execution = Execution.new(self, transition)
+              execution.run
 
-            result = runner.current
-            break if runner.success?
+              result = execution.current
+              break if execution.success?
+            end
           end
+        else
+          execution = Execution.new(self)
+          exception = InvalidTransition.new(error_messages)
+          execution.invalid!(exception)
         end
-        result
-      end
 
-      def fire!
-        raise error_messages unless can_fire?
-        fire
+        execution
       end
 
       def can_fire?
         validate
         valid?
       end
-
     end
   end
 end
