@@ -6,15 +6,14 @@ module ExMachina
         SUCCESS = :success,
         FAILURE = :failure,
         ERROR   = :error,
-        SKIPPED = :skipped
+        SKIPPED = :skipped,
+        INVALID = :invalid
       ].freeze
 
+      attr_reader   :event, :transition, :result, :error
       attr_accessor :previous, :current
-      attr_accessor :result
 
-      attr_reader :event, :transition
-
-      def initialize(event, transition)
+      def initialize(event, transition = nil)
         @event      = event
         @transition = transition
       end
@@ -44,7 +43,7 @@ module ExMachina
         elsif value == :skipped
           skipped!
         elsif value == :error
-          error!(@exception)
+          error!(@error)
         else
           @result = value
         end
@@ -69,6 +68,15 @@ module ExMachina
         finish!(@result = :failure)
       end
 
+      def invalid?
+        result == :invalid
+      end
+      def invalid!(error)
+        @current = previous
+        @error = error
+        finish!(@result = :invalid)
+      end
+
       def skipped!
         finish!(@result = :skipped)
       end
@@ -76,8 +84,8 @@ module ExMachina
         result == :skipped
       end
 
-      def error!(exception)
-        @exception = exception
+      def error!(error)
+        @error = error
         finish!(@result = :error)
       end
       def error?
@@ -102,7 +110,7 @@ module ExMachina
 
         begin
           invoke(callback(:before), true)
-          if (performed = invoke(:perform, true))
+          if invoke(:perform, true)
             success!
           else
             failure!
@@ -126,7 +134,7 @@ module ExMachina
           # do what?
         end
 
-        performed
+        self
       end
 
       protected

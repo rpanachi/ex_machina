@@ -14,6 +14,10 @@ module ExMachina
           errors << "No transitions defined from '#{status}' status"
         end
       end
+      def validate!
+        validate
+        raise InvalidTransition, error_messages unless valid?
+      end
       def error_messages
         errors.join(", ")
       end
