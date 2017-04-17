@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe ExMachina::Event::Transition do
+describe ExMachina::Transition::Definition do
 
   subject { described_class.new(from: :stopped, to: "running") }
 

@@ -1,6 +1,6 @@
 module ExMachina
-  module Event
-    module Validations
+  module Transition
+    module Validation
       def errors
         @errors ||= []
       end

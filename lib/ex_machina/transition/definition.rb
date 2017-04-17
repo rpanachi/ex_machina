@@ -1,6 +1,6 @@
 module ExMachina
-  module Event
-    class Transition
+  module Transition
+    class Definition
 
       attr_reader :from, :to
       attr_reader :do_if, :do_unless, :do_before, :do_after, :do_success, :do_failure, :do_error

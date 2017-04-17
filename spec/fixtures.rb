@@ -1,3 +1,28 @@
+class SimpleEvent
+  include ExMachina::Event
+
+  def perform(execution, **params)
+    action = params.fetch(:action, :success)
+
+    if action == :success
+      message = params.fetch(:message, "success message")
+      execution.assign!(:message, message)
+
+    elsif action == :abort
+      execution.abort!("execution aborted")
+
+    elsif action == :error
+      raise "Unknown error was thrown"
+    end
+  end
+
+  def validate(execution, **params)
+    if params.has_key?(:invalid)
+      execution.error!("There is an validation")
+    end
+  end
+end
+
 class Engine
   include ExMachina::Machine
 
@@ -9,6 +34,7 @@ end
 
 class Engine::Start
   include ExMachina::Event
+  include ExMachina::Transition
 
   transition from: :stopped, to: :running,
     if:    :has_fuel?,
@@ -29,6 +55,7 @@ end
 
 class Engine::Stop
   include ExMachina::Event
+  include ExMachina::Transition
 
   transition from: :running, to: :stopped
 end

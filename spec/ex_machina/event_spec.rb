@@ -1,80 +1,80 @@
-require 'spec_helper'
-require 'fixtures'
+require "spec_helper"
+require "fixtures"
 
 describe ExMachina::Event do
+  subject { SimpleEvent.new }
 
-  describe ".event" do
-    subject { Engine::Start }
-
-    it "extract event name from class" do
-      expect(subject.event).to eq("start")
+  context "when included on class" do
+    it "respond_to call" do
+      expect(subject).to respond_to(:call)
+    end
+    it "respond_to perform" do
+      expect(subject).to respond_to(:perform)
     end
   end
 
-  context "class methods" do
-    let(:engine) { Engine.new }
-    subject { Engine::Start }
+  describe ".call" do
+    it "invoke validate and perform methods" do
+      args = {message: "hello world"}
 
-    describe ".fire" do
-      it "call fire on event instance" do
-        expect_any_instance_of(subject).to receive(:fire)
-
-        subject.fire(engine)
+      expectation = ->(execution, params) do
+        expect(execution).to_not be_nil
+        expect(params).to eq(args)
       end
+
+      expect(subject).to receive(:validate, &expectation)
+      expect(subject).to receive(:perform, &expectation)
+
+      subject.call(args)
     end
-    describe ".fire!" do
-      it "call fire! on event instance" do
-        expect_any_instance_of(subject).to receive(:fire!)
 
-        subject.fire!(engine)
+    it "don't call perform if validation fails" do
+      expect(subject).to receive(:validate) do |execution, params|
+        execution.error!("There is an error")
       end
+      expect(subject).to_not receive(:perform)
+
+      subject.call
     end
-    describe ".can_fire?" do
-      it "call can_fire! on event instance" do
-        expect_any_instance_of(subject).to receive(:can_fire?)
 
-        subject.can_fire?(engine)
-      end
+    it "always return a new execution" do
+      execution = subject.call
+
+      expect(execution).to_not be_nil
+    end
+
+    it "return execution even on error" do
+      expect(subject).to receive(:perform) {
+        raise "UnexpectedError"
+      }
+
+      execution = subject.call
+      expect(execution).to_not be_success
+
+      errors = execution.errors
+      expect(errors).to include("(RuntimeError) UnexpectedError")
     end
   end
 
-  context "instance methods" do
-    describe "#fire" do
-      let(:engine) { Engine.new("stopped") }
-      subject { Engine::Start.new(engine) }
+  describe ".validate" do
+    it "process execution and parameters" do
+      args      = {success: true}
+      execution = double(:execution, success?: true)
 
-      it "is successful" do
-        expect(subject.fire).to eq(:running)
-      end
-      it "validate transition" do
-        engine.status = "unknown"
+      subject.validate(execution, args)
 
-        result = subject.fire
-        expect(subject.errors).to_not be_empty
-      end
-      it "change context status" do
-        result = subject.fire
-
-        expect(engine.status).to eq("running")
-      end
-      it "trust on 'perform' result" do
-        expect(subject).to receive(:perform).and_return(false)
-
-        expect(subject.fire).to eq("stopped")
-      end
-      it "is skipped if transition is conditional" do
-        expect(subject).to receive(:has_fuel?).and_return(false)
-
-        expect(subject.fire).to eq("stopped")
-      end
+      expect(execution).to be_success
     end
+  end
 
-    describe ".fire!" do
+  describe ".perform" do
+    it "process execution and parameters" do
+      args      = {success: true}
+      execution = double(:execution, success?: true, assign!: {})
 
-    end
+      subject.perform(execution, args)
 
-    describe ".can_fire?" do
-
+      expect(execution).to be_success
     end
   end
 end
